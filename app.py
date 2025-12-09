@@ -61,7 +61,7 @@ def generate_midi():
     if provider == "gemini":
         model_name = f"gemini/{model_name}"
     elif provider == "openai":
-        model_name = f"openai/{model_name}"
+        model_name = model_name
     elif provider == "anthropic":
         model_name = f"anthropic/{model_name}"
     else:
