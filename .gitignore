@@ -13,3 +13,9 @@ wheels/
 # Virtual environments
 .venv
 .env
+venv/
+env/
+
+# API keys
+*.api_key
+*.key

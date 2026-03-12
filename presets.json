@@ -1,0 +1,192 @@
+{
+  "categories": [
+    {
+      "icon": "🎼",
+      "name": "Classical",
+      "presets": [
+        {
+          "name": "Piano Sonata",
+          "prompt": "Classical piano sonata, dramatic dynamics, expressive melody, sophisticated harmony"
+        },
+        {
+          "name": "Violin Concerto",
+          "prompt": "Violin concerto melody, virtuosic passages, romantic era style, orchestral accompaniment"
+        },
+        {
+          "name": "Orchestral Symphony",
+          "prompt": "Orchestral symphony, full ensemble, dynamic contrasts, classical period structure"
+        },
+        {
+          "name": "Baroque Fugue",
+          "prompt": "Baroque fugue, contrapuntal texture, organ or harpsichord, mathematical precision"
+        }
+      ]
+    },
+    {
+      "icon": "🎷",
+      "name": "Jazz & Blues",
+      "presets": [
+        {
+          "name": "Jazz Improvisation",
+          "prompt": "Jazz improvisation, swinging rhythm, complex harmonies, walking bass, piano comping"
+        },
+        {
+          "name": "Blues Shuffle",
+          "prompt": "Blues shuffle, 12-bar progression, soulful bends, guitar and harmonica"
+        },
+        {
+          "name": "Smooth Jazz",
+          "prompt": "Smooth jazz, mellow saxophone, electric piano, laid-back groove"
+        },
+        {
+          "name": "Bebop",
+          "prompt": "Bebop style, fast tempo, intricate melodies, chromatic runs, trumpet and sax"
+        }
+      ]
+    },
+    {
+      "icon": "🎸",
+      "name": "Rock & Pop",
+      "presets": [
+        {
+          "name": "Rock Riff",
+          "prompt": "Rock guitar riff, power chords, driving drums, energetic bass line"
+        },
+        {
+          "name": "Ballad",
+          "prompt": "Emotional ballad, slow tempo, piano and strings, melancholic melody"
+        },
+        {
+          "name": "Pop Anthem",
+          "prompt": "Upbeat pop anthem, catchy melody, synth layers, four-on-the-floor beat"
+        },
+        {
+          "name": "Indie Rock",
+          "prompt": "Indie rock, jangly guitars, lo-fi aesthetic, moderate tempo, organic feel"
+        }
+      ]
+    },
+    {
+      "icon": "🎹",
+      "name": "Electronic",
+      "presets": [
+        {
+          "name": "Synth Wave",
+          "prompt": "Synthwave, retro 80s synths, pulsing bass, nostalgic atmosphere, arpeggiators"
+        },
+        {
+          "name": "Minimal Techno",
+          "prompt": "Minimal techno, repetitive beats, subtle progression, hypnotic rhythms, deep underground feel"
+        },
+        {
+          "name": "Ambient Space",
+          "prompt": "Ambient space, atmospheric pads, slow evolution, cosmic textures, meditative"
+        },
+        {
+          "name": "House Groove",
+          "prompt": "House music, four-on-the-floor kick, funky bassline, piano stabs, uplifting"
+        },
+        {
+          "name": "Drum & Bass",
+          "prompt": "Drum and bass, fast breakbeats, heavy sub-bass, atmospheric pads, energetic"
+        }
+      ]
+    },
+    {
+      "icon": "🌍",
+      "name": "Folk & World Music",
+      "presets": [
+        {
+          "name": "Acoustic Folk",
+          "prompt": "Folk tune, acoustic guitar, fingerpicking, harmonica, storytelling melody"
+        },
+        {
+          "name": "Celtic Jig",
+          "prompt": "Celtic jig, tin whistle, fiddle, lively dance rhythm, traditional Irish"
+        },
+        {
+          "name": "Flamenco",
+          "prompt": "Flamenco guitar, Spanish rhythm, passionate strumming, percussive techniques"
+        },
+        {
+          "name": "African Drums",
+          "prompt": "African percussion, polyrhythmic patterns, djembe and talking drums, tribal energy"
+        }
+      ]
+    },
+    {
+      "icon": "⚔️",
+      "name": "Game: RPG",
+      "presets": [
+        {
+          "name": "Title Theme",
+          "prompt": "Epic RPG title theme, orchestral, heroic brass, sweeping strings, adventurous"
+        },
+        {
+          "name": "Dungeon Exploration",
+          "prompt": "Dark dungeon ambience, mysterious atmosphere, droning bass, minimal melody, tense"
+        },
+        {
+          "name": "Battle Theme",
+          "prompt": "Intense battle music, fast tempo, aggressive strings, powerful brass, driving percussion"
+        },
+        {
+          "name": "Village Theme",
+          "prompt": "Peaceful village, acoustic instruments, gentle melody, warm harmony, safe feeling"
+        },
+        {
+          "name": "Boss Fight",
+          "prompt": "Epic boss battle, dramatic orchestra, choir, intense rhythms, heroic yet dangerous"
+        }
+      ]
+    },
+    {
+      "icon": "🎮",
+      "name": "Game: Platformer",
+      "presets": [
+        {
+          "name": "Main Theme",
+          "prompt": "Upbeat platformer theme, bouncy rhythm, catchy melody, cheerful chiptune style"
+        },
+        {
+          "name": "Underground Level",
+          "prompt": "Underground cave music, echoing sounds, mysterious vibe, moderate tempo"
+        },
+        {
+          "name": "Sky Level",
+          "prompt": "Sky level music, airy atmosphere, floating melody, light percussion, dreamy"
+        },
+        {
+          "name": "Speed Run",
+          "prompt": "Fast-paced speed run music, energetic tempo, driving beat, urgent melody"
+        }
+      ]
+    },
+    {
+      "icon": "😊",
+      "name": "Mood",
+      "presets": [
+        {
+          "name": "Happy",
+          "prompt": "Happy and cheerful, major key, bouncing rhythm, bright instruments, uplifting"
+        },
+        {
+          "name": "Sad",
+          "prompt": "Sad and melancholic, minor key, slow tempo, expressive melody, emotional depth"
+        },
+        {
+          "name": "Suspenseful",
+          "prompt": "Suspenseful and tense, dissonant harmonies, irregular rhythm, building tension"
+        },
+        {
+          "name": "Calm",
+          "prompt": "Calm and peaceful, gentle dynamics, flowing melody, soothing harmonies, meditative"
+        },
+        {
+          "name": "Epic",
+          "prompt": "Epic and triumphant, grand orchestra, powerful brass, soaring strings, heroic"
+        }
+      ]
+    }
+  ]
+}

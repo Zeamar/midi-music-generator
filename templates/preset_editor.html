@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MIDI Preset Editor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        header {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 { color: #38bdf8; font-size: 1.8rem; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(56,189,248,0.4); }
+        .btn-secondary { background: #475569; color: white; }
+        .btn-secondary:hover { background: #64748b; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-small { padding: 5px 12px; font-size: 0.85rem; }
+        .btn-icon { padding: 5px 8px; font-size: 0.85rem; min-width: 32px; }
+        .btn-icon:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+
+        /* Category cards */
+        .categories-list { display: flex; flex-direction: column; gap: 15px; }
+
+        .category-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #334155;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        /* Drag & drop styles */
+        .category-card[draggable="true"] { cursor: grab; }
+        .category-card[draggable="true"]:active { cursor: grabbing; }
+        .category-card.drag-over {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+        }
+        .category-card.dragging {
+            opacity: 0.4;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #334155;
+            gap: 10px;
+        }
+
+        .category-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        /* Drag handle */
+        .drag-handle {
+            color: #475569;
+            cursor: grab;
+            font-size: 1.2rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            user-select: none;
+            transition: color 0.2s;
+            flex-shrink: 0;
+        }
+        .drag-handle:hover { color: #94a3b8; }
+
+        .category-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .category-actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* Divider between order buttons and action buttons */
+        .category-actions .divider {
+            width: 1px;
+            height: 24px;
+            background: #475569;
+            margin: 0 3px;
+        }
+
+        .presets-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+
+        .preset-item {
+            background: #334155;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 15px;
+        }
+
+        .preset-info { flex: 1; }
+        .preset-name { font-weight: 600; color: #38bdf8; margin-bottom: 5px; }
+        .preset-prompt { color: #cbd5e1; font-size: 0.9rem; }
+        .preset-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.show { display: flex; }
+
+        .modal-content {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #334155;
+        }
+        .modal-header h2 { color: #38bdf8; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #94a3b8; font-weight: 500; }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .emoji-picker {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #334155;
+            border-radius: 8px;
+        }
+
+        .emoji-option {
+            font-size: 1.4rem;
+            padding: 6px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .emoji-option:hover { background: #475569; transform: scale(1.15); }
+        .emoji-option.selected { background: #38bdf8; border-radius: 4px; }
+
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-actions .btn { flex: 1; }
+
+        /* Status toast */
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: none;
+            z-index: 2000;
+            max-width: 350px;
+        }
+        .status-message.success { background: #10b981; color: white; }
+        .status-message.error { background: #ef4444; color: white; }
+        .status-message.show { display: block; }
+
+        .empty-message { text-align: center; color: #64748b; padding: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>🎵 MIDI Preset Editor</h1>
+        <p>v1.0</p>        
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-secondary" onclick="sortAllCategories()" title="Sort categories alphabetically">🔤 Sort Categories A→Z</button>
+            <button class="btn btn-success" onclick="addCategory()">➕ New Category</button>
+            <button class="btn btn-primary" onclick="savePresets()">💾 Save</button>
+        </div>
+    </header>
+
+    <div id="categoriesList" class="categories-list"></div>
+</div>
+
+<!-- Category Modal -->
+<div id="categoryModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="categoryModalTitle">Edit Category</h2>
+        </div>
+        <form id="categoryForm" onsubmit="saveCategoryForm(event)">
+            <div class="form-group">
+                <label>Category name:</label>
+                <input type="text" id="categoryName" required>
+            </div>
+            <div class="form-group">
+                <label>Select icon:</label>
+                <div id="emojiPicker" class="emoji-picker"></div>
+                <input type="hidden" id="categoryEmoji">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Preset Modal -->
+<div id="presetModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="presetModalTitle">Edit Preset</h2>
+        </div>
+        <form id="presetForm" onsubmit="savePresetForm(event)">
+            <div class="form-group">
+                <label>Preset name:</label>
+                <input type="text" id="presetName" required>
+            </div>
+            <div class="form-group">
+                <label>Prompt (description sent to AI):</label>
+                <textarea id="presetPrompt" required></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closePresetModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="statusMessage" class="status-message"></div>
+
+<script>
+    let presetsData = { categories: [] };
+    let emojis = [];
+    let editingCategoryIndex = -1;
+    let editingPreset = null;
+
+    // --- Drag & Drop state ---
+    let dragSrcIndex = null;
+
+    // ========================
+    //   DATA LOADING
+    // ========================
+
+    async function loadPresets() {
+        try {
+            const res = await fetch('/api/presets');
+            presetsData = await res.json();
+            renderCategories();
+        } catch (e) {
+            showMessage('Error loading presets: ' + e.message, 'error');
+        }
+    }
+
+    async function loadEmojis() {
+        try {
+            const res = await fetch('/api/emojis');
+            emojis = await res.json();
+        } catch (e) {
+            console.error('Error loading emojis:', e);
+        }
+    }
+
+    // ========================
+    //   RENDERING
+    // ========================
+
+    function renderCategories() {
+        const container = document.getElementById('categoriesList');
+        container.innerHTML = '';
+        const cats = presetsData.categories;
+
+        if (!cats || cats.length === 0) {
+            container.innerHTML = '<p class="empty-message">No categories. Add one with the ➕ button.</p>';
+            return;
+        }
+
+        cats.forEach((category, catIndex) => {
+            const card = document.createElement('div');
+            card.className = 'category-card';
+            card.draggable = true;
+            card.dataset.index = catIndex;
+
+            // Drag events
+            card.addEventListener('dragstart', onDragStart);
+            card.addEventListener('dragover',  onDragOver);
+            card.addEventListener('dragleave', onDragLeave);
+            card.addEventListener('drop',      onDrop);
+            card.addEventListener('dragend',   onDragEnd);
+
+            const isFirst = catIndex === 0;
+            const isLast  = catIndex === cats.length - 1;
+
+            const presetRows = category.presets.length > 0
+                ? category.presets.map((preset, pi) => `
+                    <div class="preset-item">
+                        <div class="preset-info">
+                            <div class="preset-name">${escHtml(preset.name)}</div>
+                            <div class="preset-prompt">${escHtml(preset.prompt)}</div>
+                        </div>
+                        <div class="preset-actions">
+                            <button class="btn btn-secondary btn-small"
+                                onclick="editPreset(${catIndex}, ${pi})">✏️ Edit</button>
+                            <button class="btn btn-danger btn-small"
+                                onclick="deletePreset(${catIndex}, ${pi})">🗑️</button>
+                        </div>
+                    </div>`).join('')
+                : '<p class="empty-message">No presets in this category.</p>';
+
+            card.innerHTML = `
+                <div class="category-header">
+                    <div class="category-left">
+                        <span class="drag-handle" title="Drag to reorder">⠿</span>
+                        <div class="category-title">
+                            <span>${category.icon}</span>
+                            <span>${escHtml(category.name)}</span>
+                        </div>
+                    </div>
+                    <div class="category-actions">
+                        <!-- Order buttons -->
+                        <button class="btn btn-secondary btn-icon"
+                            title="Move up"
+                            onclick="moveCategory(${catIndex}, -1)"
+                            ${isFirst ? 'disabled' : ''}>▲</button>
+                        <button class="btn btn-secondary btn-icon"
+                            title="Move down"
+                            onclick="moveCategory(${catIndex}, 1)"
+                            ${isLast ? 'disabled' : ''}>▼</button>
+
+                        <div class="divider"></div>
+
+                        <!-- Edit / delete -->
+                        <button class="btn btn-success btn-small"
+                            onclick="addPreset(${catIndex})">➕ Preset</button>
+                        <button class="btn btn-secondary btn-small"
+                            onclick="sortPresets(${catIndex})"
+                            title="Sort presets A→Z">🔤</button>
+                        <button class="btn btn-secondary btn-small"
+                            onclick="editCategory(${catIndex})">✏️</button>
+                        <button class="btn btn-danger btn-small"
+                            onclick="deleteCategory(${catIndex})">🗑️</button>
+                    </div>
+                </div>
+                <div class="presets-list">${presetRows}</div>`;
+
+            container.appendChild(card);
+        });
+    }
+
+    // Simple HTML escape to prevent XSS from user-created content
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;');
+    }
+
+    // ========================
+    //   MOVE WITH ARROWS
+    // ========================
+
+    function moveCategory(index, direction) {
+        const cats = presetsData.categories;
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= cats.length) return;
+
+        // Swap the two categories
+        [cats[index], cats[newIndex]] = [cats[newIndex], cats[index]];
+        renderCategories();
+    }
+
+    // ========================
+    //   DRAG & DROP
+    // ========================
+
+    function onDragStart(e) {
+        dragSrcIndex = parseInt(this.dataset.index);
+        this.classList.add('dragging');
+        // Required for Firefox
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragSrcIndex);
+    }
+
+    function onDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        // Only highlight if hovering over a different card
+        const targetIndex = parseInt(this.dataset.index);
+        if (targetIndex !== dragSrcIndex) {
+            this.classList.add('drag-over');
+        }
+    }
+
+    function onDragLeave() {
+        this.classList.remove('drag-over');
+    }
+
+    function onDrop(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+
+        const targetIndex = parseInt(this.dataset.index);
+        if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+
+        // Reorder: remove from source, insert at target
+        const cats = presetsData.categories;
+        const [moved] = cats.splice(dragSrcIndex, 1);
+        cats.splice(targetIndex, 0, moved);
+
+        dragSrcIndex = null;
+        renderCategories();
+    }
+
+    function onDragEnd() {
+        // Clean up any leftover highlight in case drop missed a card
+        document.querySelectorAll('.category-card').forEach(c => {
+            c.classList.remove('drag-over', 'dragging');
+        });
+        dragSrcIndex = null;
+    }
+
+    // ========================
+    //   CATEGORY CRUD
+    // ========================
+
+    function addCategory() {
+        editingCategoryIndex = -1;
+        document.getElementById('categoryModalTitle').textContent = 'New Category';
+        document.getElementById('categoryName').value = '';
+        document.getElementById('categoryEmoji').value = '';
+        renderEmojiPicker('');
+        document.getElementById('categoryModal').classList.add('show');
+    }
+
+    function editCategory(index) {
+        editingCategoryIndex = index;
+        const cat = presetsData.categories[index];
+        document.getElementById('categoryModalTitle').textContent = 'Edit Category';
+        document.getElementById('categoryName').value = cat.name;
+        document.getElementById('categoryEmoji').value = cat.icon;
+        renderEmojiPicker(cat.icon);
+        document.getElementById('categoryModal').classList.add('show');
+    }
+
+    function deleteCategory(index) {
+        const cat = presetsData.categories[index];
+        const count = cat.presets.length;
+        const warning = count > 0
+            ? `\n\nThis will also delete ${count} preset(s) inside it.`
+            : '';
+        if (!confirm(`Delete category "${cat.name}"?${warning}`)) return;
+
+        presetsData.categories.splice(index, 1);
+        renderCategories();
+        showMessage('Category deleted.', 'success');
+    }
+
+    function saveCategoryForm(e) {
+        e.preventDefault();
+        const name  = document.getElementById('categoryName').value.trim();
+        const icon  = document.getElementById('categoryEmoji').value;
+
+        if (!icon) { alert('Please select an icon.'); return; }
+
+        if (editingCategoryIndex === -1) {
+            presetsData.categories.push({ name, icon, presets: [] });
+        } else {
+            presetsData.categories[editingCategoryIndex].name = name;
+            presetsData.categories[editingCategoryIndex].icon = icon;
+        }
+
+        renderCategories();
+        closeCategoryModal();
+        showMessage('Category updated. Remember to click Save!', 'success');
+    }
+
+    function closeCategoryModal() {
+        document.getElementById('categoryModal').classList.remove('show');
+    }
+
+    // ========================
+    //   EMOJI PICKER
+    // ========================
+
+    function renderEmojiPicker(selected) {
+        const picker = document.getElementById('emojiPicker');
+        picker.innerHTML = '';
+        emojis.forEach(emoji => {
+            const el = document.createElement('div');
+            el.className = 'emoji-option' + (emoji === selected ? ' selected' : '');
+            el.textContent = emoji;
+            el.onclick = () => selectEmoji(emoji);
+            picker.appendChild(el);
+        });
+    }
+
+    function selectEmoji(emoji) {
+        document.getElementById('categoryEmoji').value = emoji;
+        document.querySelectorAll('.emoji-option').forEach(el => {
+            el.classList.toggle('selected', el.textContent === emoji);
+        });
+    }
+
+    // ========================
+    //   PRESET CRUD
+    // ========================
+
+    function addPreset(catIndex) {
+        editingCategoryIndex = catIndex;
+        editingPreset = null;
+        document.getElementById('presetModalTitle').textContent = 'New Preset';
+        document.getElementById('presetName').value = '';
+        document.getElementById('presetPrompt').value = '';
+        document.getElementById('presetModal').classList.add('show');
+    }
+
+    function editPreset(catIndex, presetIndex) {
+        editingCategoryIndex = catIndex;
+        editingPreset = presetIndex;
+        const preset = presetsData.categories[catIndex].presets[presetIndex];
+        document.getElementById('presetModalTitle').textContent = 'Edit Preset';
+        document.getElementById('presetName').value = preset.name;
+        document.getElementById('presetPrompt').value = preset.prompt;
+        document.getElementById('presetModal').classList.add('show');
+    }
+
+    function deletePreset(catIndex, presetIndex) {
+        const preset = presetsData.categories[catIndex].presets[presetIndex];
+        if (!confirm(`Delete preset "${preset.name}"?`)) return;
+
+        presetsData.categories[catIndex].presets.splice(presetIndex, 1);
+        renderCategories();
+        showMessage('Preset deleted.', 'success');
+    }
+
+    function savePresetForm(e) {
+        e.preventDefault();
+        const name   = document.getElementById('presetName').value.trim();
+        const prompt = document.getElementById('presetPrompt').value.trim();
+
+        if (editingPreset === null) {
+            presetsData.categories[editingCategoryIndex].presets.push({ name, prompt });
+        } else {
+            presetsData.categories[editingCategoryIndex].presets[editingPreset] = { name, prompt };
+        }
+
+        renderCategories();
+        closePresetModal();
+        showMessage('Preset updated. Remember to click Save!', 'success');
+    }
+
+    function closePresetModal() {
+        document.getElementById('presetModal').classList.remove('show');
+    }
+
+    // ========================
+    //   SORTING A→Z
+    // ========================
+
+    function sortPresets(catIndex) {
+        const cat = presetsData.categories[catIndex];
+        if (cat.presets.length < 2) return;
+        cat.presets.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        renderCategories();
+        showMessage(`Presets in "${cat.name}" sorted A→Z. Remember to click Save!`, 'success');
+    }
+
+    function sortAllCategories() {
+        if (presetsData.categories.length < 2) return;
+        presetsData.categories.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+        renderCategories();
+        showMessage('Categories sorted A→Z. Remember to click Save!', 'success');
+    }
+
+    // ========================
+    //   SAVE TO FILE
+    // ========================
+
+    async function savePresets() {
+        if (!confirm('Save changes to file? A backup of the current file will be created automatically.')) return;
+
+        try {
+            const res = await fetch('/api/presets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(presetsData)
+            });
+            const result = await res.json();
+            if (res.ok) {
+                showMessage(result.message, 'success');
+            } else {
+                showMessage(result.error || 'Save error', 'error');
+            }
+        } catch (e) {
+            showMessage('Save error: ' + e.message, 'error');
+        }
+    }
+
+    // ========================
+    //   STATUS TOAST
+    // ========================
+
+    function showMessage(text, type) {
+        const msg = document.getElementById('statusMessage');
+        msg.textContent = text;
+        msg.className = `status-message ${type} show`;
+        setTimeout(() => msg.classList.remove('show'), 4000);
+    }
+
+    // ========================
+    //   INIT
+    // ========================
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        await loadEmojis();
+        await loadPresets();
+    });
+</script>
+</body>
+</html>

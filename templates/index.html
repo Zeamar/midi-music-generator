@@ -427,15 +427,62 @@
         color: #64748b;
         font-size: 0.75em;
       }
+
+      /* Preset Selection Dropdowns */
+      .preset-selection {
+        margin-bottom: 20px;
+      }
+      .preset-dropdowns {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .dropdown-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        flex: 1;
+        min-width: 200px;
+      }
+      .dropdown-group label {
+        color: #94a3b8;
+        font-size: 0.85em;
+        margin-bottom: 5px;
+        font-weight: 500;
+      }
+      .dropdown-group select {
+        width: 100%;
+        padding: 10px 12px;
+        background: #334155;
+        border: 1px solid #475569;
+        border-radius: 8px;
+        color: #f1f5f9;
+        font-size: 0.95em;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .dropdown-group select:hover {
+        border-color: #64748b;
+      }
+      .dropdown-group select:focus {
+        outline: none;
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+      }
+      .dropdown-group select:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
     <div class="card">
-      <h1>Midi Music Generator</h1>
-      <p>v2</p>
-      <p>Describe music or click a preset to get started</p>
+      <h1>Midi Music Generator<span style="font-size: 0.4em; color: #64748b;"> v2</span></h1>
+      <p><span style="color: #64748b;">Zeamar's Fork v1.0</span></p>
+      <p>Describe music or choose a preset to get started</p>
       <a
-        href="https://github.com/addy999/midi-music-generator"
+        href="https://github.com/Zeamar/midi-music-generator"
         target="_blank"
         rel="noopener noreferrer"
         class="github-btn"
@@ -454,48 +501,29 @@
       <button class="settings-btn" onclick="openSettings()">⚙️ Settings</button>
 
       <!-- Preset Categories -->
-      <div class="presets" id="presets">
-        <span class="preset-tag" data-prompt="jazz improvisation piano"
-          >🎷 Jazz Improv</span
-        >
-        <span class="preset-tag" data-prompt="classical piano sonata"
-          >🎹 Piano Sonata</span
-        >
-        <span class="preset-tag" data-prompt="rock guitar riff"
-          >🎸 Rock Anthem</span
-        >
-        <span class="preset-tag" data-prompt="violin concerto melody"
-          >🎻 Violin Concerto</span
-        >
-        <span class="preset-tag" data-prompt="sad ballad piano">😢 Ballad</span>
-        <span class="preset-tag" data-prompt="triumphant march brass"
-          >� Triumphant March</span
-        >
-        <span class="preset-tag" data-prompt="bell chimes melody"
-          >� Bell Chimes</span
-        >
-        <span class="preset-tag" data-prompt="ambient space pad"
-          >🌌 Ambient Space</span
-        >
-        <span class="preset-tag" data-prompt="electronic synth wave"
-          >� Synth Wave</span
-        >
-        <span class="preset-tag" data-prompt="drum solo percussion"
-          >🥁 Drum Solo</span
-        >
-        <span class="preset-tag" data-prompt="folk tune acoustic guitar"
-          >🎶 Folk Tune</span
-        >
-        <span class="preset-tag" data-prompt="orchestral symphony"
-          >🏛️ Orchestral</span
-        >
+      <!-- Preset Selection -->
+      <div class="preset-selection">
+        <div class="preset-dropdowns">
+          <div class="dropdown-group">
+            <label for="categorySelect">Category:</label>
+            <select id="categorySelect" onchange="updatePresetDropdown()">
+              <option value="">-- Select a category --</option>
+            </select>
+          </div>
+          <div class="dropdown-group">
+            <label for="presetSelect">Preset:</label>
+            <select id="presetSelect" onchange="applyPreset()" disabled>
+              <option value="">-- Select a category first --</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="input-group">
         <input
           type="text"
           id="prompt"
-          placeholder="Describe sound..."
+          placeholder="Describe music..."
           autocomplete="off"
         />
 
@@ -504,6 +532,15 @@
           <label class="option-item">
             <input type="checkbox" id="loopMode" />
             🔁 Loopable
+          </label>
+          <label class="option-item">
+            Length:
+            <select id="lengthSelect">
+              <option value="short">Short (4-8 bars)</option>
+              <option value="medium" selected>Medium (8-16 bars)</option>
+              <option value="long">Long (16-32 bars)</option>
+              <option value="verylong">Very Long (32-64 bars)</option>
+            </select>
           </label>
           <label class="option-item">
             Variations:
@@ -539,6 +576,23 @@
       </div>
 
       <div class="controls" id="controls">
+        <!-- Volume control row (real-time via Web Audio API) -->
+        <div class="btn-row" id="gainControl" style="display: none; justify-content: center; margin-bottom: 10px;">
+          <label class="option-item">
+            🔊 Volume:
+            <select id="gainSelect" onchange="updateGainDisplay()">
+              <option value="0.2">20%</option>
+              <option value="0.3">30%</option>
+              <option value="0.4">40%</option>
+              <option value="0.5">50%</option>
+              <option value="0.6" selected>60%</option>
+              <option value="0.7">70%</option>
+              <option value="0.8">80%</option>
+              <option value="0.9">90%</option>
+              <option value="1.0">100%</option>
+            </select>
+          </label>
+        </div>
         <div class="btn-row">
           <button
             id="playWavBtn"
@@ -549,6 +603,7 @@
             ▶ Play WAV
           </button>
           <button class="secondary-btn" onclick="stopWav()">⏹ Stop</button>
+          
         </div>
         <div class="btn-row">
           <button class="secondary-btn" onclick="downloadMidi()">
@@ -583,9 +638,11 @@
           <div class="form-group">
             <label for="provider">Provider</label>
             <select id="provider" onchange="updateProviderFields()">
-              <option value="gemini">Gemini (Recommended)</option>
+              <option value="gemini">Gemini</option>
+              <option value="gemini_direct">Gemini (Direct API)</option>
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
+              <option value="ollama">Ollama (Local)</option>
               <option value="custom">Custom</option>
             </select>
           </div>
@@ -603,7 +660,7 @@
             <input
               type="text"
               id="modelName"
-              placeholder="gemini-2.5-pro"
+              placeholder="gemini-2.5-flash"
               required
             />
             <!-- <small id="modelHint"
@@ -619,9 +676,10 @@
               required
             />
             <small
-              >Your API key is stored locally in your browser and sent directly
-              to the provider to process requests. It is never stored or logged
-              on our server.</small
+              >Your API key is stored locally in your browser. It is sent to 
+              the server only during request processing and is not stored or 
+              logged on the server. The server forwards your request to the 
+              LLM provider on your behalf.</small
             >
           </div>
           <div class="modal-actions">
@@ -639,11 +697,78 @@
     </div>
 
     <script>
+      // Preset Management
+      let presetsData = null;
+
+      async function loadPresets() {
+        try {
+          const response = await fetch('/static/presets.json');
+          presetsData = await response.json();
+          populateCategoryDropdown();
+        } catch (error) {
+          console.error('Error loading presets:', error);
+          presetsData = { categories: [] };
+        }
+      }
+
+      function populateCategoryDropdown() {
+        const categorySelect = document.getElementById('categorySelect');
+        categorySelect.innerHTML = '<option value="">-- Select a category --</option>';
+        
+        if (presetsData && presetsData.categories) {
+          presetsData.categories.forEach((category, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `${category.icon} ${category.name}`;
+            categorySelect.appendChild(option);
+          });
+        }
+      }
+
+      function updatePresetDropdown() {
+        const categorySelect = document.getElementById('categorySelect');
+        const presetSelect = document.getElementById('presetSelect');
+        const categoryIndex = categorySelect.value;
+
+        if (categoryIndex === '') {
+          presetSelect.disabled = true;
+          presetSelect.innerHTML = '<option value="">-- Select a category first --</option>';
+          return;
+        }
+
+        const category = presetsData.categories[categoryIndex];
+        presetSelect.disabled = false;
+        presetSelect.innerHTML = '<option value="">-- Select preset --</option>';
+
+        category.presets.forEach((preset, index) => {
+          const option = document.createElement('option');
+          option.value = index;
+          option.textContent = preset.name;
+          presetSelect.appendChild(option);
+        });
+      }
+
+      function applyPreset() {
+        const categorySelect = document.getElementById('categorySelect');
+        const presetSelect = document.getElementById('presetSelect');
+        const categoryIndex = categorySelect.value;
+        const presetIndex = presetSelect.value;
+
+        if (categoryIndex === '' || presetIndex === '') {
+          return;
+        }
+
+        const preset = presetsData.categories[categoryIndex].presets[presetIndex];
+        document.getElementById('prompt').value = preset.prompt;
+      }
+
+      window.addEventListener('DOMContentLoaded', loadPresets);
+
       // Settings Management
       const DEFAULT_SETTINGS = {
         provider: "gemini",
         baseUrl: "",
-        modelName: "gemini-2.5-pro",
+        modelName: "gemini-2.5-flash",
         apiKey: "",
       };
 
@@ -674,6 +799,7 @@
         const provider = document.getElementById("provider").value;
         const baseUrlGroup = document.getElementById("baseUrlGroup");
         const modelInput = document.getElementById("modelName");
+        const apiKeyInput = document.getElementById("apiKey");
         // const modelHint = document.getElementById("modelHint");
 
         if (provider === "custom") {
@@ -682,10 +808,10 @@
           //   "Enter the model name as accepted by your API";
         } else {
           baseUrlGroup.style.display = "none";
-          if (provider === "gemini") {
-            modelInput.placeholder = "gemini-2.5-pro";
+          if (provider === "gemini" || provider === "gemini_direct") {
+            modelInput.placeholder = "gemini-2.5-flash";
             if (!modelInput.value || modelInput.value.includes("/")) {
-              modelInput.value = "gemini-2.5-pro";
+              modelInput.value = "gemini-2.5-flash";
             }
           } else if (provider === "openai") {
             modelInput.placeholder = "gpt-4";
@@ -697,20 +823,32 @@
             if (modelInput.value && modelInput.value.includes("/")) {
               modelInput.value = "";
             }
+          } else if (provider === "ollama") {
+            modelInput.placeholder = "gemma3:27b";
+            if (!modelInput.value || modelInput.value.includes("gemini") || modelInput.value.includes("gpt") || modelInput.value.includes("claude")) {
+              modelInput.value = "";
+            }
+            apiKeyInput.required = false;
           }
+        }
+
+        // Restore API key required state for non-Ollama providers
+        if (provider !== "ollama") {
+          apiKeyInput.required = true;
         }
       }
 
       function saveSettings(event) {
         event.preventDefault();
+        const provider = document.getElementById("provider").value;
         const settings = {
-          provider: document.getElementById("provider").value,
-          baseUrl: document.getElementById("baseUrl").value.trim(),
+          provider: provider,
+          baseUrl: provider === "custom" ? document.getElementById("baseUrl").value.trim() : "",
           modelName: document.getElementById("modelName").value.trim(),
           apiKey: document.getElementById("apiKey").value.trim(),
         };
 
-        if (!settings.modelName || !settings.apiKey) {
+        if (!settings.modelName || (!settings.apiKey && settings.provider !== "ollama")) {
           alert("Please provide both model name and API key");
           return;
         }
@@ -749,12 +887,12 @@
       // Examples functionality
       const examples = [
         {
-          name: "Folk Tune Acoustic Guitar",
-          file: "folk-tune-acoustic-guitar.wav",
+          name: "House Groove",
+          file: "house_groove.wav",
         },
-        { name: "Piano Sonata", file: "piano-sonata.wav" },
-        { name: "Rock Guitar Riff", file: "rocky.wav" },
-        { name: "Violin Concerto", file: "violins.wav" },
+        { name: "Platformer Game Main Theme", file: "platformer_main_theme.wav" },
+        { name: "Celtic Jig", file: "celtic_jig.wav" },
+        { name: "Pop Anthem", file: "pop_anthem.wav" },
       ];
 
       let currentExampleAudio = null;
@@ -869,6 +1007,7 @@
       const wavAudio = document.getElementById("wavAudio");
       let audioContext = null;
       let audioSource = null;
+      let gainNode = null;
       let startTime = 0;
       let startOffset = 0;
 
@@ -877,19 +1016,7 @@
         return variations[currentVariationIndex] || null;
       }
 
-      // Preset tag click handler
-      document.getElementById("presets").addEventListener("click", (e) => {
-        if (e.target.classList.contains("preset-tag")) {
-          const prompt = e.target.dataset.prompt;
-          document.getElementById("prompt").value = prompt;
-
-          // Visual feedback
-          document
-            .querySelectorAll(".preset-tag")
-            .forEach((t) => t.classList.remove("active"));
-          e.target.classList.add("active");
-        }
-      });
+      // Preset selection is now handled by dropdown menus (applyPreset function)
 
       async function generateMidi() {
         const prompt = document.getElementById("prompt").value;
@@ -906,6 +1033,7 @@
         const variationCount = parseInt(
           document.getElementById("variationCount").value
         );
+        const lengthSetting = document.getElementById("lengthSelect").value;
 
         if (!prompt) return;
 
@@ -915,6 +1043,7 @@
         visualizerContainer.style.display = "none";
         document.getElementById("playWavBtn").style.display = "none";
         document.getElementById("downloadWavBtn").style.display = "none";
+        document.getElementById("gainControl").style.display = "none";
         document.getElementById("wavStatus").innerText = "";
 
         stopWav(); // Stop any playing audio
@@ -964,6 +1093,7 @@
                 prompt: prompt,
                 loop: loopMode,
                 variation_seed: i,
+                length: lengthSetting,
                 llm_settings: llmSettings,
               }),
             })
@@ -1017,7 +1147,17 @@
           // Wait for all to complete (or fail)
           await Promise.allSettled(fetchPromises);
 
-          if (hasError) {
+          if (completedCount === 0) {
+            // All variations failed - reset state cleanly so next attempt works
+            status.innerText = `All ${variationCount} variation${
+              variationCount > 1 ? "s" : ""
+            } failed to generate. Try again.`;
+            variations = [];
+            currentVariationIndex = 0;
+            controls.style.display = "none";
+            variationsContainer.style.display = "none";
+            visualizerContainer.style.display = "none";
+          } else if (hasError) {
             status.innerText = `Some variations failed to generate. ${completedCount}/${variationCount} completed.`;
           } else {
             status.innerText = `Generated ${variationCount} variation${
@@ -1040,15 +1180,21 @@
         const playWavBtn = document.getElementById("playWavBtn");
         const downloadWavBtn = document.getElementById("downloadWavBtn");
 
-        wavStatus.innerText = `Converting variation #${
-          index + 1
-        } to high-quality WAV...`;
-        playWavBtn.style.display = "none";
-        downloadWavBtn.style.display = "none";
+        // Only update UI elements if this is the currently viewed variation
+        if (index === currentVariationIndex) {
+          wavStatus.innerText = `Converting variation #${
+            index + 1
+          } to high-quality WAV...`;
+          playWavBtn.style.display = "none";
+          downloadWavBtn.style.display = "none";
+          document.getElementById("gainControl").style.display = "none";
+        }
 
         try {
           const formData = new FormData();
           formData.append("midi_file", variation.blob, "music.mid");
+          // Use default gain (0.6) for WAV rendering - volume control is handled
+          // client-side via Web Audio API GainNode for real-time adjustment
 
           const response = await fetch("/convert_midi_to_wav", {
             method: "POST",
@@ -1075,9 +1221,13 @@
           variations[index].wavUrl = wavUrl;
           variations[index].audioBuffer = audioBuffer;
 
-          wavStatus.innerText = `Variation #${index + 1} WAV is ready.`;
-          playWavBtn.style.display = "inline-block";
-          downloadWavBtn.style.display = "inline-block";
+          // Only update UI if this is still the currently viewed variation
+          if (index === currentVariationIndex) {
+            wavStatus.innerText = `Variation #${index + 1} WAV is ready.`;
+            playWavBtn.style.display = "inline-block";
+            downloadWavBtn.style.display = "inline-block";
+            document.getElementById("gainControl").style.display = "flex";
+          }
         } catch (e) {
           wavStatus.innerText = "Error creating WAV: " + e.message;
           console.error(e);
@@ -1231,6 +1381,14 @@
         });
       }
 
+      function updateGainDisplay() {
+        // Update gain in real-time via Web Audio API GainNode
+        const gainValue = parseFloat(document.getElementById("gainSelect").value);
+        if (gainNode) {
+          gainNode.gain.value = gainValue;
+        }
+      }
+
       function playWav() {
         const current = getCurrentMidi();
         if (!current || !current.audioBuffer) return;
@@ -1245,11 +1403,18 @@
         // Check loop mode
         const loopMode = document.getElementById("loopMode").checked;
 
-        // Create a new source node
+        // Create a new source node with gain control
         audioSource = audioContext.createBufferSource();
         audioSource.buffer = current.audioBuffer;
         audioSource.loop = loopMode;
-        audioSource.connect(audioContext.destination);
+        
+        // Create GainNode for real-time volume control
+        gainNode = audioContext.createGain();
+        const gainValue = parseFloat(document.getElementById("gainSelect").value);
+        gainNode.gain.value = gainValue;
+        
+        audioSource.connect(gainNode);
+        gainNode.connect(audioContext.destination);
 
         // Start playback
         startTime = audioContext.currentTime;
@@ -1300,6 +1465,13 @@
           }
           audioSource = null;
         }
+        
+        if (gainNode) {
+          try {
+            gainNode.disconnect();
+          } catch (e) {}
+          gainNode = null;
+        }
 
         if (animationId) {
           cancelAnimationFrame(animationId);
@@ -1326,32 +1498,53 @@
         window.URL.revokeObjectURL(url);
       }
 
-      function downloadWav() {
+      async function downloadWav() {
         const current = getCurrentMidi();
-        if (!current || !current.wavBlob) return;
+        if (!current || !current.blob) return;
 
-        const url = window.URL.createObjectURL(current.wavBlob);
-        const a = document.createElement("a");
-        a.style.display = "none";
-        a.href = url;
-        const variationSuffix =
-          variations.length > 1 ? `_v${currentVariationIndex + 1}` : "";
-        a.download = `gemini_music${variationSuffix}.wav`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
+        const downloadBtn = document.getElementById("downloadWavBtn");
+        const originalText = downloadBtn.innerHTML;
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = "⏳ Creating...";
+
+        try {
+          // Generate WAV with fixed gain=0.6 for download
+          const formData = new FormData();
+          formData.append("midi_file", current.blob, "music.mid");
+          formData.append("gain", "0.6"); // Always use 0.6 for downloads
+
+          const response = await fetch("/convert_midi_to_wav", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to convert to WAV");
+          }
+
+          const wavBlob = await response.blob();
+          const url = window.URL.createObjectURL(wavBlob);
+          const a = document.createElement("a");
+          a.style.display = "none";
+          a.href = url;
+          const variationSuffix =
+            variations.length > 1 ? `_v${currentVariationIndex + 1}` : "";
+          a.download = `gemini_music${variationSuffix}.wav`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+        } catch (e) {
+          alert("Error creating WAV: " + e.message);
+        } finally {
+          downloadBtn.disabled = false;
+          downloadBtn.innerHTML = originalText;
+        }
       }
 
       document.getElementById("prompt").addEventListener("keypress", (e) => {
         if (e.key === "Enter") generateMidi();
       });
 
-      // Clear preset selection when typing
-      document.getElementById("prompt").addEventListener("input", () => {
-        document
-          .querySelectorAll(".preset-tag")
-          .forEach((t) => t.classList.remove("active"));
-      });
     </script>
   </body>
 </html>

@@ -2,6 +2,7 @@ import os
 import subprocess
 import json
 import io
+import tempfile
 
 # import mido
 from litellm import completion
@@ -17,9 +18,49 @@ from midiutil import MIDIFile
 
 app = Flask(__name__)
 
+
+def find_soundfont():
+    """Find a usable soundfont file. Checks the project directory first, then common system paths."""
+    # Project directory (user-provided soundfont takes priority)
+    local_candidates = [
+        "GeneralUserGS.sf3",
+        "GeneralUserGS.sf2",
+        "GeneralUser-GS.sf3",
+        "GeneralUser-GS.sf2",
+    ]
+    for sf in local_candidates:
+        if os.path.exists(sf):
+            return sf
+
+    # Common system paths (installed via package manager)
+    system_candidates = [
+        "/usr/share/sounds/sf2/FluidR3_GM.sf2",
+        "/usr/share/sounds/sf3/MuseScore_General.sf3",
+        "/usr/share/sounds/sf2/default-GM.sf2",
+        "/usr/share/sounds/sf3/default-GM.sf3",
+        "/usr/share/sounds/sf2/TimGM6mb.sf2",
+        "/usr/share/sounds/sf3/MuseScore_General_Lite.sf3",
+        "/usr/share/soundfonts/FluidR3_GM.sf2",          # Fedora/Arch
+        "/usr/share/soundfonts/default.sf2",              # Arch
+    ]
+    for sf in system_candidates:
+        if os.path.exists(sf):
+            return sf
+
+    return None
+
+
+SOUNDFONT = find_soundfont()
+if SOUNDFONT:
+    print(f"Soundfont: {SOUNDFONT}")
+else:
+    print("WARNING: No soundfont found. MIDI to WAV conversion will not work.")
+    print("Install FluidSynth soundfonts (e.g. 'sudo apt install fluid-soundfont-gm')")
+    print("or place a .sf2/.sf3 file in the project directory.")
+
 # --- CONFIGURATION ---
 # Optional: Set a default API key via environment variable (can be overridden by client)
-example_1 = open("jazz.json", "r").read()
+# example_1 = open("jazz.json", "r").read()
 
 
 @app.route("/")
@@ -37,12 +78,19 @@ def serve_sample(filename):
     )
 
 
+@app.route("/static/presets.json")
+def serve_presets():
+    """Serve presets.json file"""
+    return send_file("presets.json", mimetype="application/json")
+
+
 @app.route("/generate_midi", methods=["POST"])
 def generate_midi():
     data = request.json
     user_prompt = data.get("prompt")
     loop_mode = data.get("loop", False)
     variation_seed = data.get("variation_seed", 0)
+    length_setting = data.get("length", "medium")
     llm_settings = data.get("llm_settings", {})
 
     # Get LLM configuration from client or fallback to server env
@@ -51,7 +99,7 @@ def generate_midi():
     provider = llm_settings.get("provider", "gemini")
     base_url = llm_settings.get("baseUrl", "").strip()
 
-    if not api_key:
+    if not api_key and provider != "ollama":
         return (
             jsonify({"error": "API key not provided. Please configure in settings."}),
             400,
@@ -60,10 +108,20 @@ def generate_midi():
     # Construct full model name with provider prefix
     if provider == "gemini":
         model_name = f"gemini/{model_name}"
+    elif provider == "gemini_direct":
+        model_name = f"openai/{model_name}"
+        if not base_url:
+            base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
     elif provider == "openai":
         model_name = model_name
     elif provider == "anthropic":
         model_name = f"anthropic/{model_name}"
+    elif provider == "ollama":
+        model_name = f"openai/{model_name}"
+        if not base_url:
+            base_url = "http://localhost:11434/v1"
+        if not api_key:
+            api_key = "ollama"  # Ollama doesn't need a real API key
     else:
         model_name = "openai/" + model_name
 
@@ -82,6 +140,15 @@ def generate_midi():
     - Try different rhythms, instruments, or note patterns each time.
     """
 
+    # Length instruction based on user selection
+    length_instructions = {
+        "short": "Create a short musical piece (4-8 bars). Keep it concise but complete.",
+        "medium": "Create engaging musical pieces (8-16 bars).",
+        "long": "Create a longer musical composition (16-32 bars). Develop the musical ideas more fully.",
+        "verylong": "Create an extended musical composition (32-64 bars). Include musical development, variation, and a clear structure with multiple sections."
+    }
+    length_instruction = length_instructions.get(length_setting, length_instructions["medium"])
+
     # 1. Construct the Prompt
     # We ask Gemini to act as a MIDI composer.
     prompt = (
@@ -97,7 +164,7 @@ def generate_midi():
     - 'pitch': Integer 0-127 (60 is Middle C).
     - 'duration': Float (length in beats).
     - 'time': Float (start time in beats).
-    - Create engaging musical pieces (8-16 bars).
+    - {length_instruction}
     - 'tempo': Integer (BPM), set on the first track.
     {loop_instruction}
     {variation_instruction}
@@ -365,6 +432,9 @@ def generate_midi():
         if base_url:
             completion_params["api_base"] = base_url
 
+        # Debug: log what we're sending to litellm
+        # print(f"[DEBUG] provider={provider}, model={completion_params['model']}, api_base={completion_params.get('api_base', '(none)')}")
+
         response = completion(**completion_params)
         raw = (
             response.choices[0]
@@ -427,7 +497,17 @@ def generate_midi():
         return jsonify({"error": str(e)}), 500
 
 
-def separate_channels_and_render(input_midi, soundfont, output_wav):
+def separate_channels_and_render(input_midi, soundfont, output_wav, gain=0.6):
+    """
+    Convert MIDI to WAV using FluidSynth.
+    
+    Args:
+        input_midi: Path to input MIDI file
+        soundfont: Path to soundfont file  
+        output_wav: Path to output WAV file
+        gain: FluidSynth gain value (0.0-1.0). Lower values prevent clipping.
+              Default 0.6 is a safe balance for multi-track pieces.
+    """
 
     # mid = mido.MidiFile(input_midi)
     # cleaned_mid = mido.MidiFile()
@@ -482,7 +562,7 @@ def separate_channels_and_render(input_midi, soundfont, output_wav):
     #     f"Channels remapped. Track 1->Ch{available_channels[0]}, Track 2->Ch{available_channels[1]}, etc."
     # )
 
-    # Render
+    # Render with FluidSynth
     command = [
         "fluidsynth",
         "-ni",
@@ -493,7 +573,7 @@ def separate_channels_and_render(input_midi, soundfont, output_wav):
         "-r",
         "44100",
         "-g",
-        "1.0",
+        str(gain),
         "-o",
         "synth.polyphony=512",
     ]
@@ -511,29 +591,59 @@ def separate_channels_and_render(input_midi, soundfont, output_wav):
 
 @app.route("/convert_midi_to_wav", methods=["POST"])
 def convert_midi_to_wav():
-
+    """
+    Convert MIDI to WAV. Accepts optional 'gain' parameter.
+    If not provided, uses default 0.6 for downloads.
+    For preview playback, the client can send a custom gain value.
+    """
     try:
+        if not SOUNDFONT:
+            return jsonify({"error": "No soundfont found. Install FluidSynth soundfonts or place a .sf2/.sf3 file in the project directory."}), 500
+
         # Get the MIDI file from the request
         midi_file = request.files["midi_file"]
         midi_data = midi_file.read()
+        
+        # Get optional gain parameter (default to 0.6 for downloads)
+        gain = float(request.form.get("gain", 0.6))
+        # Clamp gain to safe range
+        gain = max(0.1, min(1.0, gain))
 
-        open("/tmp/test.mid", "wb").write(midi_data)
+        # Use unique temp files to avoid race conditions with parallel requests
+        with tempfile.NamedTemporaryFile(suffix=".mid", delete=False) as tmp_mid:
+            tmp_mid.write(midi_data)
+            tmp_mid_path = tmp_mid.name
+        
+        tmp_wav_path = tmp_mid_path.replace(".mid", ".wav")
 
-        # Convert MIDI to WAV
+        # Convert MIDI to WAV with specified gain
         separate_channels_and_render(
-            input_midi="/tmp/test.mid",
-            soundfont="GeneralUserGS.sf3",
-            output_wav="/tmp/test.wav",
+            input_midi=tmp_mid_path,
+            soundfont=SOUNDFONT,
+            output_wav=tmp_wav_path,
+            gain=gain,
         )
 
         # Return the WAV file
-        return send_file(
-            "/tmp/test.wav",
+        response = send_file(
+            tmp_wav_path,
             mimetype="audio/wav",
             as_attachment=True,
             download_name="output.wav",
         )
+        
+        # Clean up WAV temp file after sending
+        @response.call_on_close
+        def cleanup():
+            if os.path.exists(tmp_wav_path):
+                os.remove(tmp_wav_path)
+        
+        return response
 
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5001, debug=False)
