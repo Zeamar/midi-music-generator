@@ -85,7 +85,7 @@ The settings menu offers the following provider options:
 - **Gemini (Direct API)** — Connects directly to Google's REST endpoint. Use this if the standard Gemini option doesn't work with your API key.
 - **OpenAI** — For OpenAI API keys (GPT-4, etc.).
 - **Anthropic** — For Anthropic API keys (Claude models).
-- **Ollama (Local)** — For local models via [Ollama](https://ollama.com/). No API key required. Expects Ollama running at `http://localhost:11434`. Results depend on the model's ability to follow structured output instructions — larger models (e.g. Gemma 3 27B) tend to work better.
+- **Ollama (Local)** — For local models via [Ollama](https://ollama.com/). No API key required. Expects Ollama running at `http://localhost:11434`. Results depend on the model's ability to follow structured output instructions — larger models tend to work better.
 - **Custom** — Lets you specify any OpenAI-compatible API endpoint and model name.
 
 > **Tip:** Not sure which Gemini model to use? The included `list_gemini_models.py` utility lists all models available with your API key. See [README_List_Gemini_Models.md](README_List_Gemini_Models.md) for details.
