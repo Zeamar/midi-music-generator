@@ -1,6 +1,6 @@
 # MIDI Music Generator (Fork)
 
-> **Want to try before installing?** The original (unforked) version is available online at [original online demo](https://midi.fly.dev/). Note that it lacks the bug fixes and features of this fork.
+An AI music generator that creates MIDI compositions from text prompts using LLMs.
 
 This is a fork of [addy999/midi-music-generator](https://github.com/addy999/midi-music-generator) with the following changes:
 
@@ -20,7 +20,7 @@ This is a fork of [addy999/midi-music-generator](https://github.com/addy999/midi
 
 ## Examples
 
-The `samples/` folder contains example compositions generated with this fork, including both MIDI and WAV files. See [`samples/README.md`](samples/README.md) for details on which models and soundfonts were used.
+The `samples/` folder contains example compositions generated with this fork, including both MIDI and WAV files. See [`samples/README_Samples.md`](samples/README.md) for details on which models and soundfonts were used.
 
 ## Features
 
