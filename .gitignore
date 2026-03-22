@@ -19,3 +19,6 @@ env/
 # API keys
 *.api_key
 *.key
+
+# Personal settings
+soundfonts.txt

@@ -1,0 +1,19 @@
+# Soundfont selection
+# -------------------------------------------------------------
+# Uncomment ONE line to select which soundfont to use.
+# The first uncommented file that exists will be used.
+# Lines starting with # are ignored.
+#
+# Paths are relative to the project directory.
+# You can also use subdirectories, e.g. soundfonts/MyFont.sf2
+# or absolute paths like /usr/share/sounds/sf2/FluidR3_GM.sf2
+#
+# If this file is empty or no listed soundfont is found,
+# the app falls back to its built-in search order.
+# -------------------------------------------------------------
+
+
+# GeneralUser_GS.sf2
+# GeneralUser_GS.sf3
+# soundfonts/FluidR3_GM.sf2
+# /usr/share/sounds/sf2/FluidR3_GM.sf2

@@ -479,7 +479,7 @@
   <body>
     <div class="card">
       <h1>Midi Music Generator<span style="font-size: 0.4em; color: #64748b;"> v2</span></h1>
-      <p><span style="color: #64748b;">Zeamar's Fork v1.0</span></p>
+      <p><span style="color: #64748b;">Zeamar's Fork v1.1</span></p>
       <p>Describe music or choose a preset to get started</p>
       <a
         href="https://github.com/Zeamar/midi-music-generator"
@@ -551,6 +551,13 @@
               <option value="5">5</option>
             </select>
           </label>
+          <label class="option-item" title="Use a shorter prompt optimized for small local models (Ollama). Reduces token count significantly.">
+            <input type="checkbox" id="liteMode" />
+            Lite
+          </label>
+        </div>
+        <div id="liteModeInfo" style="display: none; color: #64748b; font-size: 0.8em; margin-top: 4px;">
+          Lite mode: shorter prompt for local models (~80% fewer tokens)
         </div>
 
         <button id="genBtn" onclick="generateMidi()">✨ Generate Music</button>
@@ -622,6 +629,16 @@
       <div id="wavStatus" class="status"></div>
       <audio id="wavAudio" style="display: none"></audio>
 
+      <!-- Debug Panel (collapsible) -->
+      <div id="debugPanel" style="display: none; margin-top: 15px; text-align: left;">
+        <button onclick="toggleDebugContent()" style="width: auto; padding: 6px 12px; background: #334155; border: 1px solid #475569; border-radius: 6px; color: #94a3b8; font-size: 0.8em; cursor: pointer; margin-bottom: 8px;">
+          <span id="debugToggleIcon">▶</span> LLM Raw Response
+        </button>
+        <div id="debugContent" style="display: none;">
+          <pre id="debugRawText" style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; color: #94a3b8; font-size: 0.75em; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; margin: 0;"></pre>
+        </div>
+      </div>
+
       <!-- Examples Section -->
       <div class="examples-section">
         <h3>🎵 Examples</h3>
@@ -691,6 +708,13 @@
               Cancel
             </button>
             <button type="submit">Save Settings</button>
+          </div>
+          <div class="form-group" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #334155;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #94a3b8;">
+              <input type="checkbox" id="debugMode" style="width: 18px; height: 18px; accent-color: #38bdf8;" />
+              Debug mode
+            </label>
+            <small>Show raw LLM responses for troubleshooting. Useful when testing local models.</small>
           </div>
         </form>
       </div>
@@ -770,6 +794,7 @@
         baseUrl: "",
         modelName: "gemini-2.5-flash",
         apiKey: "",
+        debug: false,
       };
 
       function loadSettings() {
@@ -787,6 +812,7 @@
         document.getElementById("baseUrl").value = settings.baseUrl || "";
         document.getElementById("modelName").value = settings.modelName;
         document.getElementById("apiKey").value = settings.apiKey || "";
+        document.getElementById("debugMode").checked = settings.debug || false;
         updateProviderFields();
         document.getElementById("settingsModal").classList.add("show");
       }
@@ -846,6 +872,7 @@
           baseUrl: provider === "custom" ? document.getElementById("baseUrl").value.trim() : "",
           modelName: document.getElementById("modelName").value.trim(),
           apiKey: document.getElementById("apiKey").value.trim(),
+          debug: document.getElementById("debugMode").checked,
         };
 
         if (!settings.modelName || (!settings.apiKey && settings.provider !== "ollama")) {
@@ -863,6 +890,7 @@
         genBtn.style.display = "block";
 
         alert("Settings saved successfully!");
+        checkAutoLite();
       }
 
       // Check if settings exist on page load
@@ -871,7 +899,7 @@
         const apiKeyWarning = document.getElementById("apiKeyWarning");
         const genBtn = document.getElementById("genBtn");
 
-        if (!settings.apiKey) {
+        if (!settings.apiKey && settings.provider !== "ollama") {
           // Show warning instead of alert
           apiKeyWarning.style.display = "block";
           genBtn.style.display = "none";
@@ -887,12 +915,12 @@
       // Examples functionality
       const examples = [
         {
-          name: "House Groove",
-          file: "house_groove.wav",
+          name: "Flamenco",
+          file: "flamenco.wav",
         },
-        { name: "Platformer Game Main Theme", file: "platformer_main_theme.wav" },
-        { name: "Celtic Jig", file: "celtic_jig.wav" },
-        { name: "Pop Anthem", file: "pop_anthem.wav" },
+        { name: "Smooth Jazz", file: "smooth_jazz.wav" },
+        { name: "Indie Rock", file: "indie_rock.wav" },
+        { name: "RPG Game Village Theme", file: "rpg_game_village_theme.wav" },
       ];
 
       let currentExampleAudio = null;
@@ -1034,6 +1062,7 @@
           document.getElementById("variationCount").value
         );
         const lengthSetting = document.getElementById("lengthSelect").value;
+        const liteMode = document.getElementById("liteMode").checked;
 
         if (!prompt) return;
 
@@ -1045,6 +1074,7 @@
         document.getElementById("downloadWavBtn").style.display = "none";
         document.getElementById("gainControl").style.display = "none";
         document.getElementById("wavStatus").innerText = "";
+        clearDebugPanel();
 
         stopWav(); // Stop any playing audio
         variations = [];
@@ -1052,16 +1082,18 @@
 
         status.innerText = `AI is composing ${variationCount} variation${
           variationCount > 1 ? "s" : ""
-        } in parallel...`;
+        } in parallel...${liteMode ? " (Lite mode)" : ""}`;
 
         try {
           // Load LLM settings
           const llmSettings = loadSettings();
-          if (!llmSettings.apiKey) {
+          if (!llmSettings.apiKey && llmSettings.provider !== "ollama") {
             status.innerText = "Please configure your API key in settings";
             btn.disabled = false;
             return;
           }
+
+          const isDebug = llmSettings.debug || false;
 
           // Initialize variations array with placeholders
           variations = Array(variationCount)
@@ -1094,12 +1126,18 @@
                 loop: loopMode,
                 variation_seed: i,
                 length: lengthSetting,
+                lite_mode: liteMode,
                 llm_settings: llmSettings,
               }),
             })
               .then(async (response) => {
                 if (!response.ok) {
                   let err = await response.json();
+                  // Show debug info for failed variations
+                  if (isDebug) {
+                    const rawText = err.raw_response || "(No raw response captured — the error may have occurred before the LLM responded)";
+                    showDebugResponse(rawText, i + 1, err.error);
+                  }
                   throw new Error(err.error || "Server error");
                 }
                 const blob = await response.blob();
@@ -1114,6 +1152,18 @@
                   wavUrl: null,
                   audioBuffer: null,
                 };
+
+                // Fetch debug raw response if debug mode is on
+                if (isDebug) {
+                  fetch(`/debug_response/${i}`)
+                    .then(r => r.json())
+                    .then(data => {
+                      if (data.raw_response) {
+                        showDebugResponse(data.raw_response, i + 1, null);
+                      }
+                    })
+                    .catch(() => {}); // Non-critical, ignore errors
+                }
 
                 completedCount++;
                 status.innerText = `Generated ${completedCount}/${variationCount} variation${
@@ -1540,6 +1590,76 @@
           downloadBtn.innerHTML = originalText;
         }
       }
+
+      // Debug panel functions
+      function showDebugResponse(rawText, variationNum, errorMsg) {
+        const panel = document.getElementById("debugPanel");
+        const textEl = document.getElementById("debugRawText");
+        panel.style.display = "block";
+
+        const header = `=== Variation #${variationNum} ===\n`;
+        const errorLine = errorMsg ? `Error: ${errorMsg}\n\n` : "";
+        const newEntry = header + errorLine + rawText;
+
+        // Store entries and re-render sorted by variation number
+        if (!window._debugEntries) window._debugEntries = {};
+        window._debugEntries[variationNum] = newEntry;
+
+        const sorted = Object.keys(window._debugEntries)
+          .sort((a, b) => Number(a) - Number(b))
+          .map(k => window._debugEntries[k]);
+        textEl.textContent = sorted.join("\n\n");
+      }
+
+      function clearDebugPanel() {
+        const panel = document.getElementById("debugPanel");
+        const textEl = document.getElementById("debugRawText");
+        const content = document.getElementById("debugContent");
+        const icon = document.getElementById("debugToggleIcon");
+        panel.style.display = "none";
+        textEl.textContent = "";
+        content.style.display = "none";
+        icon.textContent = "▶";
+        window._debugEntries = {};
+      }
+
+      function toggleDebugContent() {
+        const content = document.getElementById("debugContent");
+        const icon = document.getElementById("debugToggleIcon");
+        if (content.style.display === "none") {
+          content.style.display = "block";
+          icon.textContent = "▼";
+        } else {
+          content.style.display = "none";
+          icon.textContent = "▶";
+        }
+      }
+
+      // Auto-enable Lite mode when Ollama provider is selected
+      function checkAutoLite() {
+        const settings = loadSettings();
+        const liteCheckbox = document.getElementById("liteMode");
+        const liteModeInfo = document.getElementById("liteModeInfo");
+        // If provider is ollama and user hasn't manually toggled lite, suggest it
+        if (settings.provider === "ollama" && !liteCheckbox.dataset.manuallySet) {
+          liteCheckbox.checked = true;
+        }
+        if (liteModeInfo) {
+          liteModeInfo.style.display = liteCheckbox.checked ? "block" : "none";
+        }
+      }
+      // Track manual toggles of Lite mode
+      document.addEventListener("DOMContentLoaded", () => {
+        const liteCheckbox = document.getElementById("liteMode");
+        const liteModeInfo = document.getElementById("liteModeInfo");
+        liteCheckbox.addEventListener("change", () => {
+          liteCheckbox.dataset.manuallySet = "true";
+          liteModeInfo.style.display = liteCheckbox.checked ? "block" : "none";
+        });
+        checkAutoLite();
+        // Show info text if already checked
+        liteModeInfo.style.display = liteCheckbox.checked ? "block" : "none";
+      });
 
       document.getElementById("prompt").addEventListener("keypress", (e) => {
         if (e.key === "Enter") generateMidi();
