@@ -20,7 +20,7 @@ This is a fork of [addy999/midi-music-generator](https://github.com/addy999/midi
 
 ## Examples
 
-The `samples/` folder contains example compositions generated with this fork, including both MIDI and WAV files. See [`samples/README_Samples.md`](samples/README.md) for details on which models and soundfonts were used.
+The `samples/` folder contains example compositions generated with this fork, including both MIDI and WAV files. See [`samples/README_Samples.md`](samples/README_Samples.md) for details on which models and soundfonts were used.
 
 ## Features
 
