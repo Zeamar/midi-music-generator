@@ -39,8 +39,15 @@ The `samples/` folder contains example compositions generated with this fork, in
 
 ### Requirements
 
-- Python 3.10+
+- Python 3.8 or higher
 - [FluidSynth](https://www.fluidsynth.org/) with a General MIDI soundfont (required for MIDI → WAV conversion)
+- git
+- python3-venv (Ubuntu/Debian/Mint may require manual install)
+
+On Ubuntu/Debian/Mint, install missing prerequisites with:
+```bash
+sudo apt install git python3-venv
+```
 
 ### Installation
 
@@ -53,13 +60,16 @@ pip3 install flask litellm midiutil
 ```
 
 #### FluidSynth and soundfonts
-
-FluidSynth is needed for converting generated MIDI files to playable WAV audio. Without it, you can still generate and download MIDI files.
+FluidSynth is needed for converting generated MIDI files to playable WAV audio.
+Without it, you can still generate and download MIDI files.
 
 On Debian/Ubuntu/Mint:
 ```bash
 sudo apt install fluidsynth fluid-soundfont-gm
 ```
+
+> Note: This installs a system-level package. You can run this command
+> whether or not your virtual environment is active.
 
 The app automatically detects soundfont files — it first checks the project directory for known soundfont filenames, then checks common system paths (`/usr/share/sounds/sf2/`, `/usr/share/sounds/sf3/`, etc.). If you have FluidSynth installed with its default soundfonts, it should work out of the box.
 

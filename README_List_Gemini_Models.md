@@ -6,7 +6,7 @@ This helps you find the correct model name to enter in the application's **Setti
 
 ## Requirements
 
-- Python 3.7+
+- Python 3.8 or higher
 - `requests` library
 
 If you installed the main app's dependencies in a virtual environment, activate it first (`source venv/bin/activate`) — `requests` is likely already available through litellm's dependencies.
